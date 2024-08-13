@@ -1,0 +1,52 @@
+
+
+  
+let html5QrcodeScanner ;
+
+function onScanSuccess(decodedText, decodedResult) {
+	
+	let video_container = document.getElementById('reader__scan_region').querySelector('video')
+	if (html5QrcodeScanner.getState() == 2)
+	{
+		html5QrcodeScanner.pause()
+		video_container.pause()
+	}
+
+	const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
+
+    fetch('/qr_scanner/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({ 'qr_code_data': decodedText })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data['success'] == 'Ticket used')
+        createToast('success', 'Your ticket has been consumed');
+      else
+        createToast('error', data['error']);
+      setTimeout(() => {
+        html5QrcodeScanner.resume();
+        video_container.play();
+      }, 1000);
+    })
+    .catch(error => {
+      // Handle errors
+
+  
+    }); 
+  
+  }
+  
+  function onScanFailure(error) {
+    // handle scan failure, usually better to ignore and keep scanning.
+    // for example:
+    // console.warn(`Code scan error = ${error}`);
+  }
+
+  html5QrcodeScanner= new Html5QrcodeScanner("reader", { fps: 60},  false);
+
+html5QrcodeScanner.render(onScanSuccess, onScanFailure);
